@@ -1,0 +1,265 @@
+{
+  "name": "norm_terminal_amber",
+  "display_name": "N.O.R.M. Terminal Amber",
+  "description": "Default amber CRT terminal theme for N.O.R.M. v0.02-alpha-r1.",
+  "colors": {
+    "background": [
+      8,
+      6,
+      4
+    ],
+    "background_alt": [
+      12,
+      9,
+      6
+    ],
+    "panel_background": [
+      10,
+      8,
+      5
+    ],
+    "panel_background_active": [
+      18,
+      12,
+      6
+    ],
+    "primary": [
+      255,
+      170,
+      40
+    ],
+    "primary_bright": [
+      255,
+      210,
+      90
+    ],
+    "primary_dim": [
+      170,
+      110,
+      35
+    ],
+    "accent": [
+      255,
+      190,
+      70
+    ],
+    "accent_bright": [
+      255,
+      225,
+      120
+    ],
+    "accent_dim": [
+      145,
+      85,
+      25
+    ],
+    "text": [
+      255,
+      185,
+      70
+    ],
+    "text_bright": [
+      255,
+      220,
+      120
+    ],
+    "text_dim": [
+      175,
+      115,
+      45
+    ],
+    "text_muted": [
+      120,
+      80,
+      35
+    ],
+    "border": [
+      220,
+      145,
+      35
+    ],
+    "border_bright": [
+      255,
+      195,
+      70
+    ],
+    "border_dim": [
+      130,
+      80,
+      25
+    ],
+    "eye_fill": [
+      12,
+      9,
+      6
+    ],
+    "eye_border": [
+      255,
+      170,
+      40
+    ],
+    "eye_glow": [
+      255,
+      190,
+      70
+    ],
+    "pupil": [
+      255,
+      220,
+      95
+    ],
+    "pupil_core": [
+      255,
+      245,
+      180
+    ],
+    "mouth": [
+      255,
+      170,
+      40
+    ],
+    "mouth_bright": [
+      255,
+      220,
+      95
+    ],
+    "mouth_dim": [
+      150,
+      95,
+      30
+    ],
+    "warning": [
+      255,
+      75,
+      45
+    ],
+    "warning_dim": [
+      160,
+      40,
+      25
+    ],
+    "success": [
+      130,
+      255,
+      140
+    ],
+    "info": [
+      120,
+      180,
+      255
+    ],
+    "shadow": [
+      0,
+      0,
+      0
+    ],
+    "transparent_overlay": [
+      0,
+      0,
+      0
+    ]
+  },
+  "font": {
+    "family": "monospace",
+    "preferred_system_fonts": [
+      "DejaVu Sans Mono",
+      "Liberation Mono",
+      "Courier New"
+    ],
+    "fallback_size_small": 14,
+    "fallback_size_normal": 18,
+    "fallback_size_large": 24,
+    "fallback_size_header": 22,
+    "uppercase_headers": true
+  },
+  "screen": {
+    "background_noise": true,
+    "noise_opacity": 18,
+    "noise_refresh_fps": 6,
+    "scanlines": true,
+    "scanline_spacing": 4,
+    "scanline_opacity": 36,
+    "vignette": true,
+    "vignette_strength": 90,
+    "glow": true,
+    "glow_strength": 0.65,
+    "fake_bloom": true,
+    "crt_flicker": true,
+    "crt_flicker_strength": 0.035,
+    "corner_darkening": true,
+    "terminal_frame": true
+  },
+  "frame": {
+    "outer_margin": 24,
+    "border_width": 1,
+    "corner_ticks": true,
+    "broken_line_style": true,
+    "header_enabled": true,
+    "footer_enabled": true
+  },
+  "face": {
+    "eye_style": "terminal_capsule",
+    "pupil_style": "tracking_orb",
+    "brow_style": "terminal_bar",
+    "mouth_style": "status_line",
+    "show_brows": true,
+    "show_status_text": true,
+    "show_prompt_cursor": true,
+    "eye_glow": true,
+    "mouth_glow": true,
+    "pupil_glow": true,
+    "blink_enabled": true,
+    "idle_drift": true,
+    "idle_glitch": true,
+    "default_status_text": "LISTENING..."
+  },
+  "animation": {
+    "target_fps": 24,
+    "blink_min_seconds": 4,
+    "blink_max_seconds": 9,
+    "blink_duration_ms": 140,
+    "idle_drift_enabled": true,
+    "idle_drift_speed": 0.18,
+    "idle_drift_range_x": 42,
+    "idle_drift_range_y": 12,
+    "mouth_idle_pulse": true,
+    "mouth_speaking_speed": 8.5,
+    "mouth_thinking_speed": 3.0,
+    "cursor_blink_enabled": true,
+    "cursor_blink_seconds": 0.55,
+    "glitch_enabled": true,
+    "glitch_idle_min_seconds": 30,
+    "glitch_idle_max_seconds": 90,
+    "glitch_manual_duration_ms": 900,
+    "glitch_error_intensity": 0.35
+  },
+  "ui": {
+    "button_style": "terminal_outline",
+    "button_height": 44,
+    "button_gap": 10,
+    "button_border_width": 1,
+    "button_glow_on_press": true,
+    "panel_style": "terminal_box",
+    "panel_padding": 14,
+    "panel_border_width": 1,
+    "active_page_indicator": true,
+    "touch_feedback_ms": 150
+  },
+  "phrases": {
+    "boot_header": "N.O.R.M. BOOTSTRAP",
+    "idle_status": "LISTENING...",
+    "listening_status": "LISTENING...",
+    "thinking_status": "PROCESSING",
+    "speaking_status": "RESPONSE ACTIVE",
+    "error_status": "ERROR DETECTED",
+    "sleep_status": "STANDBY",
+    "brain_offline": "BRAIN OFFLINE",
+    "camera_ready": "CAMERA READY",
+    "audio_ready": "AUDIO READY",
+    "config_loaded": "CONFIG PROFILE LOADED",
+    "routine_active": "ROUTINE MONITORING ACTIVE",
+    "annoyed_status": "ANNOYED",
+    "bored_status": "BORED",
+    "worried_status": "MILDLY CONCERNED"
+  }
+}

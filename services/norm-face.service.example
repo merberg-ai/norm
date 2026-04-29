@@ -1,0 +1,29 @@
+# Example only. Prefer installing with:
+#   ./scripts/install_service.sh
+# because it writes the correct user and project path automatically.
+
+[Unit]
+Description=N.O.R.M. Face Core
+Wants=network-online.target
+After=network-online.target sound.target local-fs.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+Group=YOUR_PRIMARY_GROUP
+WorkingDirectory=/home/YOUR_USER/norm
+Environment=PYTHONUNBUFFERED=1
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_RENDER_DRIVER=software
+Environment=SDL_AUDIODRIVER=dummy
+Environment=NORM_TOUCH_DEVICE=/dev/input/event0
+ExecStart=/home/YOUR_USER/norm/.venv/bin/python /home/YOUR_USER/norm/app.py --config /home/YOUR_USER/norm/configs/norm-alpha.json
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGTERM
+TimeoutStopSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}N.O.R.M. Diagnostics{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>SYSTEM DIAGNOSTICS</h1>
+  <div class="button-row">
+    <button onclick="pollDiagnostics(true)">Refresh</button>
+    <button onclick="loadFullDiagnostics()">Full Hardware Report</button>
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>SYSTEM</h2>
+    <div class="kv-grid">
+      <div>Host</div><strong id="diag-host">--</strong>
+      <div>IP</div><strong id="diag-ip">--</strong>
+      <div>Profile</div><strong id="diag-profile">--</strong>
+      <div>Uptime</div><strong id="diag-uptime">--</strong>
+      <div>Python</div><strong id="diag-python">--</strong>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>RESOURCES</h2>
+    <div class="kv-grid">
+      <div>CPU Temp</div><strong id="diag-cpu-temp">--</strong>
+      <div>Load</div><strong id="diag-load">--</strong>
+      <div>Memory</div><strong id="diag-memory">--</strong>
+      <div>Disk</div><strong id="diag-disk">--</strong>
+    </div>
+  </div>
+</section>
+
+<section class="grid two">
+  <div class="panel">
+    <h2>CAMERA / TOUCH</h2>
+    <div class="kv-grid">
+      <div>Camera Device</div><strong id="diag-camera-device">--</strong>
+      <div>Camera Exists</div><strong id="diag-camera-exists">--</strong>
+      <div>Camera Status</div><strong id="diag-camera-status">--</strong>
+      <div>Snapshot</div><strong id="diag-camera-snapshot">--</strong>
+      <div>Touch Device</div><strong id="diag-touch-device">--</strong>
+      <div>Touch Event</div><strong id="diag-touch-event">--</strong>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>AUDIO</h2>
+    <div class="kv-grid">
+      <div>Input</div><strong id="diag-audio-in">--</strong>
+      <div>Output</div><strong id="diag-audio-out">--</strong>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>BRAIN</h2>
+  <div class="kv-grid">
+    <div>Status</div><strong id="diag-brain-status">--</strong>
+    <div>Host</div><strong id="diag-brain-host">--</strong>
+    <div>Model</div><strong id="diag-brain-model">--</strong>
+    <div>Latency</div><strong id="diag-brain-latency">--</strong>
+    <div>Last Error</div><strong id="diag-brain-error">--</strong>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>RAW OUTPUT</h2>
+  <pre id="diagnostics-raw" class="terminal-block">awaiting diagnostics...</pre>
+</section>
+{% endblock %}
+{% block scripts %}<script>pollDiagnostics(true); setInterval(() => pollDiagnostics(false), 5000);</script>{% endblock %}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}N.O.R.M.{% endblock %}</title>
+  <link rel="stylesheet" href="/static/norm.css">
+</head>
+<body>
+  <div class="scanlines"></div>
+  <header class="topbar">
+    <div>
+      <strong>N.O.R.M.</strong>
+      <span class="dim">/ Neural Overseer for Routine Management</span>
+    </div>
+    <div class="dim">{{ state.version if state is defined else 'v0.02-alpha-r4-memory' }}</div>
+  </header>
+
+  <nav class="nav">
+    <a href="/">Dashboard</a>
+    <a href="/face">Face</a>
+    <a href="/camera">Camera</a>
+    <a href="/audio">Audio</a>
+    <a href="/brain">Brain</a>
+    <a href="/memory">Memory</a>
+    <a href="/config">Config</a>
+    <a href="/diagnostics">Diagnostics</a>
+    <a href="/logs">Logs</a>
+  </nav>
+
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="/static/norm.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

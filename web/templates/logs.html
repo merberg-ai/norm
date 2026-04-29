@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}N.O.R.M. Logs{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>LOGS</h1>
+  <p class="dim">Last 200 lines from logs/norm.log.</p>
+  <pre class="terminal-block">{% for line in lines %}{{ line }}
+{% endfor %}</pre>
+</section>
+{% endblock %}

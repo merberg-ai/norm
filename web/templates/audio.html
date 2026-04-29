@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}N.O.R.M. Audio{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>AUDIO DIAGNOSTICS</h1>
+  <p class="dim">N.O.R.M. changes to LISTENING while recording and SPEAKING while playing audio.</p>
+  <div class="kv-grid">
+    <div>Input Device</div><strong id="audio-input-device">{{ config.audio.input.device }}</strong>
+    <div>Input Status</div><strong id="audio-input-status">{{ state.audio_input_status }}</strong>
+    <div>Output Device</div><strong id="audio-output-device">{{ config.audio.output.device }}</strong>
+    <div>Output Status</div><strong id="audio-output-status">{{ state.audio_output_status }}</strong>
+    <div>Last Recording</div><strong id="audio-last-recording">{{ state.last_audio_recording or 'none' }}</strong>
+  </div>
+  <div class="button-grid">
+    <button onclick="recordAudio()">Record Test</button>
+    <button onclick="playRecording()">Play Recording</button>
+    <button onclick="playTest()">Play Test Sound</button>
+    <button onclick="refreshAudioStatus()">Refresh Status</button>
+    <button onclick="loadAudioDevices()">List Audio Devices</button>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>LAST RECORDING</h2>
+  <p class="dim">After recording, use the browser audio control below or the Play Recording button.</p>
+  <audio id="recording-player" controls src="/api/audio/latest-recording.wav?cache={{ state.uptime_seconds }}"></audio>
+</section>
+
+<section class="panel">
+  <h2>AUDIO OUTPUT</h2>
+  <pre id="audio-result" class="terminal-block">awaiting command...</pre>
+</section>
+{% endblock %}
+{% block scripts %}<script>refreshAudioStatus();</script>{% endblock %}

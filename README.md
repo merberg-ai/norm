@@ -35,7 +35,7 @@ Mostly helpful.
 ## Current version
 
 ```text
-0.02-alpha-r3
+0.02-alpha-r4-memory
 ```
 
 Default config:
@@ -92,6 +92,7 @@ Pages include:
 - Camera testing
 - Audio testing
 - Brain prompt testing
+- Memory core
 - Config editor
 - Diagnostics
 - Logs
@@ -120,6 +121,12 @@ POST /api/face/glitch
 
 GET  /api/brain/status
 POST /api/brain/ask
+
+GET  /api/memory/status
+GET  /api/memory/recent
+GET  /api/memory/long-term
+POST /api/memory/remember
+POST /api/memory/clear-session
 
 GET  /api/camera/status
 GET  /api/camera/devices
@@ -199,6 +206,44 @@ Generated speech is written by default to:
 ```text
 /tmp/norm_tts.wav
 ```
+
+
+
+### SQLite memory core
+
+N.O.R.M. now has Phase 1 conversation memory.
+
+This uses Python's built-in `sqlite3` module, so there are no new package dependencies yet. Every successful `/brain` exchange can be stored in:
+
+```text
+data/norm_memory.sqlite3
+```
+
+The prompt builder can inject recent conversation turns into future Ollama requests, giving N.O.R.M. short-term continuity instead of treating every typed prompt like a fresh boot from the void.
+
+Memory controls live at:
+
+```text
+http://<pi-ip>:8088/memory
+```
+
+Current memory features:
+
+- SQLite schema bootstrap
+- Conversation sessions
+- Recent user/assistant turn recall
+- Manual long-term memories
+- Memory status API
+- Clear current session API
+- Config flags for enabling/disabling memory
+
+Planned next memory phases:
+
+- Rolling conversation summaries
+- sqlite-vec semantic recall
+- People database
+- Camera/voice identity recognition
+- Optional OMEN LAN offload service for heavy recognition
 
 ### Ollama brain
 

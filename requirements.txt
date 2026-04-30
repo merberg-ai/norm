@@ -1,8 +1,0 @@
-# N.O.R.M. v0.02-alpha-r1 Python web/API dependencies
-# Keep this Pi Zero 2 W friendly: DO NOT use uvicorn[standard].
-# uvicorn[standard] pulls uvloop/httptools, which often tries to compile on
-# 32-bit Raspberry Pi OS + Python 3.13 and can get killed for memory.
-fastapi>=0.110
-uvicorn>=0.27
-jinja2>=3.1
-requests>=2.31

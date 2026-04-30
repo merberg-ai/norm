@@ -1,0 +1,4 @@
+config_version: 2
+
+greeting: "Hello from hello_norm. The plugin system lives."
+emit_ready_event: true

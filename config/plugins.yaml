@@ -1,0 +1,14 @@
+config_version: 2
+
+plugins:
+  hello_norm:
+    enabled: true
+    config_overrides:
+      greeting: "Hello from the beta2 plugin containment chamber."
+      emit_ready_event: true
+    webui:
+      enabled: true
+      route: "/hello"
+      label: "Hello"
+      nav_enabled: true
+      nav_group: "Debug"

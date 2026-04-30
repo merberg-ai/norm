@@ -1,0 +1,16 @@
+manifest_version: 1
+id: hello_norm
+name: "Hello N.O.R.M."
+version: "0.1.0"
+description: "Dummy beta2-pre1 plugin used to prove discovery, config, events, and health work."
+entrypoint: "main:Plugin"
+enabled: true
+permissions:
+  - events
+  - webui
+webui:
+  enabled: true
+  route: "/hello"
+  label: "Hello"
+  nav_enabled: true
+  nav_group: "Debug"

@@ -1,7 +1,10 @@
-.venv/
 __pycache__/
-*.pyc
-logs/*.log
-*.tar.gz
-*.zip
-.DS_Store
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+*.log
+data/logs/*.log
+data/plugin_data/
+data/backups/

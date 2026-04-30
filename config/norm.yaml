@@ -1,0 +1,28 @@
+config_version: 2
+
+app:
+  name: "N.O.R.M."
+  full_name: "Neural Overseer for Routine Management"
+  codename: "beta2-pre1"
+  install_id: "norm-beta2"
+  safe_mode: false
+
+paths:
+  data_dir: "./data"
+  logs_dir: "./data/logs"
+  plugins_dir: "./plugins"
+
+logging:
+  level: "INFO"
+  file_enabled: true
+  file_name: "norm-beta2.log"
+  console_enabled: true
+
+runtime:
+  heartbeat_seconds: 30
+  print_startup_report: true
+  keep_running: true
+
+services:
+  plugin_manager:
+    enabled: true

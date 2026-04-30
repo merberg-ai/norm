@@ -1,27 +1,35 @@
-# N.O.R.M. beta2-pre1 migration notes
+# N.O.R.M. beta2-pre2 migration notes
 
-This package is intentionally separate from the current deployed N.O.R.M. install.
+pre2 is still a foundation package. It is safe to run in `~/norm` if that is now your beta2 working directory.
 
-Recommended Pi location:
+## From pre1 to pre2
+
+Overlay the files into your beta2 folder:
 
 ```bash
-~/norm-beta2/
+cd ~/norm
+unzip -o /path/to/norm-beta2-pre2-overlay.zip
+./scripts/install_deps.sh
+source .venv/bin/activate
+./scripts/run_once.sh
+./scripts/run_once_web.sh
+./scripts/run_web.sh
 ```
 
-Do not copy this over `~/norm/` yet.
+## What changed
 
-## Current alpha code worth porting later
+- Added `webui/service.py`
+- Added `webui/static/norm.css`
+- Added web config in `config/norm.yaml`
+- Added `services.webui.enabled`
+- AppContext now starts PluginManager first, then WebUI
+- hello_norm now exposes `/hello`
+- requirements now include FastAPI/Uvicorn
 
-- `web/static/norm.css` and `web/static/norm.js` for the dark amber cockpit style
-- `web/templates/` as inspiration for beta2 web UI shell
-- `face/renderer.py` as the first procedural face renderer
-- `speech/tts.py` as reference for eSpeak settings/presets
-- `brain/ollama.py` and `brain/prompt_builder.py` for BrainService
-- `brain/memory_store.py` for the memory migration path
-- `hardware/audio.py`, `hardware/camera.py`, and `hardware/touch.py` for diagnostics/services
+## Notes
 
-## Why pre1 is boring
+`run_once.sh` intentionally uses `--no-web` so a basic smoke test does not need to bind a port.
 
-Pre1 proves the core runtime can boot, load versioned config, start services, discover plugins, run plugin lifecycle hooks, and survive plugin failure.
+`run_once_web.sh` tests that the web dependencies and route mounting are working.
 
-That foundation comes before face designer, Piper, wake word, memory, identity, or body hardware.
+`run_web.sh` runs the actual cockpit until Ctrl+C.

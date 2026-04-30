@@ -1,4 +1,5 @@
 config_version: 2
 
-greeting: "Hello from hello_norm. The plugin system lives."
+greeting: "Hello from the beta2 plugin containment chamber."
 emit_ready_event: true
+web_message: "The dummy plugin route is alive. No goblins escaped."

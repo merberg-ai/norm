@@ -14,12 +14,15 @@ from core.paths import NormPaths
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="N.O.R.M. beta2-pre1 modular runtime skeleton")
+    parser = argparse.ArgumentParser(description="N.O.R.M. beta2-pre2 modular runtime skeleton + web shell")
     parser.add_argument("--root", default=".", help="Project root directory. Default: current directory")
     parser.add_argument("--config-dir", default="config", help="Config directory relative to root")
     parser.add_argument("--safe-mode", action="store_true", help="Boot without starting plugins")
     parser.add_argument("--once", action="store_true", help="Start, print health report, then shut down")
     parser.add_argument("--json-health", action="store_true", help="Print health report as JSON")
+    parser.add_argument("--no-web", action="store_true", help="Disable the Web UI service for this run")
+    parser.add_argument("--host", help="Override web UI host for this run")
+    parser.add_argument("--port", type=int, help="Override web UI port for this run")
     return parser
 
 
@@ -33,9 +36,16 @@ async def amain() -> int:
     config_manager = ConfigManager(paths.config_dir)
     config = config_manager.load()
 
-    # Runtime CLI safe-mode override. We do not write it back to disk.
+    # Runtime CLI overrides. We do not write them back to disk.
     if args.safe_mode:
         config.norm.setdefault("app", {})["safe_mode"] = True
+    if args.no_web:
+        config.norm.setdefault("services", {}).setdefault("webui", {})["enabled"] = False
+        config.norm.setdefault("webui", {})["enabled"] = False
+    if args.host:
+        config.norm.setdefault("webui", {})["host"] = args.host
+    if args.port:
+        config.norm.setdefault("webui", {})["port"] = args.port
 
     # Re-resolve paths after config load in case the user customized dirs.
     paths = NormPaths.from_root(
@@ -69,7 +79,11 @@ async def amain() -> int:
             await context.stop()
             return 0
 
-        logger.info("N.O.R.M. beta2-pre1 is running. Press Ctrl+C to stop.")
+        web_enabled = bool(config.get("services.webui.enabled", True)) and bool(config.get("webui.enabled", True))
+        if web_enabled:
+            logger.info("N.O.R.M. beta2-pre2 is running. Web UI: http://%s:%s", config.get("webui.host", "0.0.0.0"), config.get("webui.port", 8090))
+        else:
+            logger.info("N.O.R.M. beta2-pre2 is running without Web UI. Press Ctrl+C to stop.")
         heartbeat_seconds = int(config.get("runtime.heartbeat_seconds", 30))
         heartbeat_task = asyncio.create_task(context.wait_forever(heartbeat_seconds))
         shutdown_task = asyncio.create_task(shutdown.wait())
@@ -95,7 +109,7 @@ async def amain() -> int:
 
 def print_startup_report(report: dict) -> None:
     app = report.get("app", {})
-    print("\n=== N.O.R.M. beta2-pre1 startup report ===")
+    print("\n=== N.O.R.M. beta2-pre2 startup report ===")
     print(f"App:        {app.get('name')} / {app.get('codename')}")
     print(f"Install ID: {app.get('install_id')}")
     print(f"Safe mode:  {app.get('safe_mode')}")
@@ -104,6 +118,10 @@ def print_startup_report(report: dict) -> None:
         ok = "OK" if health.get("ok") else "FAIL"
         print(f"  - {name}: {ok} ({health.get('status')})")
         details = health.get("details") or {}
+        if name == "webui" and details:
+            print(f"    Web: enabled={details.get('enabled')} host={details.get('host')} port={details.get('port')}")
+            if details.get("routes"):
+                print(f"    Plugin routes: {', '.join(details.get('routes'))}")
         if name == "plugin_manager" and details:
             print("    Plugins:")
             for plugin_id, plugin_health in details.items():

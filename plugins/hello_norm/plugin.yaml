@@ -1,10 +1,10 @@
 manifest_version: 1
 id: hello_norm
 name: "Hello N.O.R.M."
-version: "0.1.0"
-description: "Dummy beta2-pre1 plugin used to prove discovery, config, events, and health work."
-entrypoint: "main:Plugin"
+version: "0.2.0"
+description: "Tiny demo plugin proving discovery, lifecycle, health, API status, and configurable web routes."
 enabled: true
+entrypoint: "main:Plugin"
 permissions:
   - events
   - webui
@@ -14,3 +14,4 @@ webui:
   label: "Hello"
   nav_enabled: true
   nav_group: "Debug"
+  icon: "sparkles"

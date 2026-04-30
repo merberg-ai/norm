@@ -21,6 +21,8 @@ RESERVED_WEB_ROUTES = {
     "/people",
     "/plugins",
     "/logs",
+    "/events",
+    "/static",
 }
 
 

@@ -10,6 +10,7 @@ from core.event_bus import EventBus
 from core.paths import NormPaths
 from core.plugin_manager import PluginManagerService
 from core.service_manager import ServiceManager
+from webui.service import WebUIService
 
 
 @dataclass
@@ -40,7 +41,10 @@ class AppContext:
         return placeholder
 
     def register_core_services(self) -> None:
+        # PluginManager starts first so WebUI can mount configurable plugin routes.
         self.services.register(PluginManagerService(self))
+        if bool(self.config.get("services.webui.enabled", True)):
+            self.services.register(WebUIService(self))
 
     async def start(self) -> None:
         await self.events.publish("system.starting", {"codename": self.config.get("app.codename")})

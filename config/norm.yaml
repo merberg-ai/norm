@@ -3,7 +3,7 @@ config_version: 2
 app:
   name: "N.O.R.M."
   full_name: "Neural Overseer for Routine Management"
-  codename: "beta2-pre1"
+  codename: "beta2-pre2"
   install_id: "norm-beta2"
   safe_mode: false
 
@@ -11,6 +11,12 @@ paths:
   data_dir: "./data"
   logs_dir: "./data/logs"
   plugins_dir: "./plugins"
+
+webui:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8090
+  uvicorn_log_level: "warning"
 
 logging:
   level: "INFO"
@@ -25,4 +31,6 @@ runtime:
 
 services:
   plugin_manager:
+    enabled: true
+  webui:
     enabled: true

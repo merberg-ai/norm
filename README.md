@@ -1,177 +1,133 @@
-# N.O.R.M. beta2-pre1
+# N.O.R.M. beta2-pre2
 
-**Neural Overseer for Routine Management**  
-Fresh modular skeleton for the separate N.O.R.M. beta2 install.
+**Neural Overseer for Routine Management**
 
-This is the first beta2 foundation package. It does **not** replace the current deployed N.O.R.M. install. Deploy it into a fresh directory such as:
+This is the second beta2 foundation package. It keeps the modular pre1 skeleton and adds the first dark/amber web cockpit shell plus plugin-aware web routes.
 
-```bash
-~/norm-beta2/
-```
+This package is meant to live in `~/norm` if that is your preferred beta2 working directory. It does **not** require touching the original alpha install unless you intentionally use the same folder.
 
-The goal of pre1 is simple: prove the new core runtime can boot, load versioned configs, start services, discover plugins, and run a dummy plugin without dragging the whole app into the swamp.
+## What pre2 adds
 
-## Included
-
-```text
-app.py
-config/
-  norm.yaml
-  plugins.yaml
-core/
-  app_context.py
-  config.py
-  event_bus.py
-  lifecycle.py
-  logging.py
-  paths.py
-  plugin_manager.py
-  safety.py
-  service.py
-  service_manager.py
-plugins/
-  hello_norm/
-    plugin.yaml
-    config.yaml
-    main.py
-scripts/
-  install_deps.sh
-  run_dev.sh
-  run_once.sh
-  run_safe_mode.sh
-  clean_project.sh
-tests/
-  test_boot_once.py
-```
-
-## What works in pre1
-
-- Config files include `config_version: 2`
-- YAML config loading
-- Startup logging to console and `data/logs/norm-beta2.log`
-- `AppContext`
+- `config_version: 2` safety checks remain in place
+- Core `AppContext`
 - `EventBus`
-- `BaseService`
 - `ServiceManager`
 - `PluginManagerService`
-- Plugin discovery from `./plugins/`
-- Plugin manifest loading
-- Plugin config loading and override merging
-- Plugin lifecycle: `setup`, `start`, `stop`, `health`
-- Plugin failure quarantine
-- Basic web route reservation/conflict checks
-- Safe mode plugin skip
-- Startup health report
+- New `WebUIService`
+- FastAPI dashboard shell
+- `/plugins` page
+- `/config` read-only config page
+- `/events` event bus viewer
+- `/logs` basic log file listing
+- `/api/core/health`
+- `/api/core/config`
+- `/api/core/events`
+- `/api/plugins`
+- `/api/plugins/<plugin_id>/health`
+- `/api/plugins/<plugin_id>/status`
+- Configurable plugin landing route support
+- Demo plugin mounted at `/hello`
+- Reserved route protection
+- Dark amber CSS shell
 
-## What intentionally does not exist yet
+## Install / update in `~/norm`
 
-- Web UI shell
-- Plugin route mounting
-- Face service
-- Face packs
-- Face designer
-- TTS manager
-- Piper
-- Wake word
-- Memory database
-- Identity recognition
-- Body/hardware control
-
-That is deliberate. Skeleton first. Haunted robot organs later.
-
-## Install on the Pi
+From your Pi:
 
 ```bash
-cd ~
-unzip norm-beta2-pre1.zip -d norm-beta2
-cd norm-beta2
+cd ~/norm
+unzip -o /path/to/norm-beta2-pre2-overlay.zip
 ./scripts/install_deps.sh
-```
-
-Activate the venv:
-
-```bash
 source .venv/bin/activate
 ```
 
-Run a one-shot boot test:
+## Smoke test without web
 
 ```bash
 ./scripts/run_once.sh
 ```
 
-Expected output includes:
+This starts core services and plugins, skips the web server, prints a startup report, then exits.
+
+## Smoke test with web service
+
+```bash
+./scripts/run_once_web.sh
+```
+
+This confirms FastAPI/Uvicorn can initialize, then exits.
+
+## Run the web UI
+
+```bash
+./scripts/run_web.sh
+```
+
+Then open:
 
 ```text
-Plugin discovered: hello_norm
-Plugin started: hello_norm
-=== N.O.R.M. beta2-pre1 startup report ===
+http://<pi-ip>:8090
 ```
 
-Run normally:
+Useful pages:
+
+```text
+/
+/plugins
+/config
+/events
+/logs
+/hello
+/api/core/health
+/api/plugins
+/api/plugins/hello_norm/status
+```
+
+## Change the web port
+
+Temporary override:
 
 ```bash
-./scripts/run_dev.sh
+./scripts/run_web.sh --port 8091
 ```
 
-Stop with `Ctrl+C`.
-
-## Safe mode
-
-Safe mode boots the runtime but skips plugin startup:
-
-```bash
-./scripts/run_safe_mode.sh
-```
-
-Or:
-
-```bash
-python3 app.py --safe-mode --once
-```
-
-You can also set this in `config/norm.yaml`:
+Permanent setting:
 
 ```yaml
-app:
-  safe_mode: true
+# config/norm.yaml
+webui:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8090
 ```
 
-## Config versioning
+## Plugin route example
 
-Every major config file starts with:
+`plugins/hello_norm/plugin.yaml`:
 
 ```yaml
-config_version: 2
+webui:
+  enabled: true
+  route: "/hello"
+  label: "Hello"
 ```
 
-Pre1 refuses missing, old, or future config versions. That is intentional safety behavior so future config migrations do not silently mangle N.O.R.M.'s brainstem.
+Plugin API routes are automatically namespaced under:
 
-## Plugin override example
-
-`config/plugins.yaml` can override a plugin without editing the plugin folder:
-
-```yaml
-config_version: 2
-
-plugins:
-  hello_norm:
-    enabled: true
-    config_overrides:
-      greeting: "The plugin chamber is operational."
-    webui:
-      route: "/hello"
+```text
+/api/plugins/<plugin_id>/...
 ```
 
-## Next planned milestone
+Plugin UI routes cannot override reserved core paths like `/`, `/config`, `/plugins`, `/api/core/*`, or `/api/plugins/*`.
 
-`beta2-pre2`: Web UI shell + plugin-aware routes.
+## Next milestone
 
-That should add:
+beta2-pre3 should begin the Face Core transplant:
 
-- dark amber cockpit web shell
-- `/plugins` page
-- plugin status display
-- configurable plugin web routes
-- `/api/plugins/<plugin_id>/...` namespace
-- reserved route protection in the actual web server
+- `FaceService`
+- face state events
+- current procedural renderer wrapped as `norm_default`
+- basic face pack loader
+- basic face preview API
+- face selector shell in the web UI
+

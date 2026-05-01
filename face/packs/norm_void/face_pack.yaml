@@ -1,0 +1,78 @@
+config_version: 2
+id: "norm_void"
+name: "N.O.R.M. Void"
+description: "Darker occult terminal variant. Definitely normal. Probably."
+renderer: "procedural"
+colors:
+  background: "#030204"
+  frame: "#bc7cff"
+  primary: "#9f5cff"
+  bright: "#ead7ff"
+  dim: "#5b3b7f"
+  warning: "#ff386c"
+geometry:
+  eye_w: 178
+  eye_h: 98
+  eye_y: 145
+  eye_gap: 88
+  mouth_w: 310
+  mouth_y: 330
+states:
+  sleeping:
+    label: "DORMANT"
+    mood: "sleeping"
+    mouth: "flat"
+    blink: 1
+  idle:
+    label: "VOID"
+    mood: "idle"
+    mouth: "idle"
+    pupil_dx: 10
+  wake_detected:
+    label: "AWOKEN"
+    mood: "wake"
+    mouth: "idle"
+    bright: "#ffffff"
+  listening:
+    label: "HEARING"
+    mood: "listening"
+    mouth: "flat"
+    pupil_dx: -8
+  thinking:
+    label: "DREAMING"
+    mood: "thinking"
+    mouth: "thinking"
+  speaking:
+    label: "ORACLE"
+    mood: "speaking"
+    mouth: "speaking"
+  happy:
+    label: "APPROVES"
+    mood: "happy"
+    mouth: "idle"
+  annoyed:
+    label: "DISPLEASED"
+    mood: "annoyed"
+    mouth: "frown"
+    brow: "angry"
+  confused:
+    label: "STATIC"
+    mood: "confused"
+    mouth: "thinking"
+    brow: "worried"
+    glitch: true
+  error:
+    label: "RUPTURE"
+    mood: "error"
+    mouth: "error"
+    brow: "angry"
+    warning: "#ff386c"
+    glitch: true
+  emergency:
+    label: "ABYSS"
+    mood: "emergency"
+    mouth: "error"
+    brow: "angry"
+    primary: "#ff386c"
+    bright: "#ffe1ea"
+    glitch: true

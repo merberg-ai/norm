@@ -1,133 +1,75 @@
-# N.O.R.M. beta2-pre2
+# N.O.R.M. beta2-pre3.5
 
-**Neural Overseer for Routine Management**
+Neural Overseer for Routine Management — modular beta2 skeleton with plugin containment, web cockpit, swappable face packs, and an optional Pygame screen face renderer.
 
-This is the second beta2 foundation package. It keeps the modular pre1 skeleton and adds the first dark/amber web cockpit shell plus plugin-aware web routes.
+## Current milestone
 
-This package is meant to live in `~/norm` if that is your preferred beta2 working directory. It does **not** require touching the original alpha install unless you intentionally use the same folder.
+`beta2-pre3.5` adds the first real screen-face graft:
 
-## What pre2 adds
+- core `FaceService`
+- swappable face packs
+- SVG web previews
+- `/face` web controls
+- optional Pygame fullscreen/windowed screen renderer
+- screen renderer follows active pack/state
+- screen failures are contained and do not kill the runtime
 
-- `config_version: 2` safety checks remain in place
-- Core `AppContext`
-- `EventBus`
-- `ServiceManager`
-- `PluginManagerService`
-- New `WebUIService`
-- FastAPI dashboard shell
-- `/plugins` page
-- `/config` read-only config page
-- `/events` event bus viewer
-- `/logs` basic log file listing
-- `/api/core/health`
-- `/api/core/config`
-- `/api/core/events`
-- `/api/plugins`
-- `/api/plugins/<plugin_id>/health`
-- `/api/plugins/<plugin_id>/status`
-- Configurable plugin landing route support
-- Demo plugin mounted at `/hello`
-- Reserved route protection
-- Dark amber CSS shell
-
-## Install / update in `~/norm`
-
-From your Pi:
+## Install/update
 
 ```bash
 cd ~/norm
-unzip -o /path/to/norm-beta2-pre2-overlay.zip
 ./scripts/install_deps.sh
 source .venv/bin/activate
 ```
 
-## Smoke test without web
+## Smoke test core
 
 ```bash
 ./scripts/run_once.sh
 ```
 
-This starts core services and plugins, skips the web server, prints a startup report, then exits.
-
-## Smoke test with web service
-
-```bash
-./scripts/run_once_web.sh
-```
-
-This confirms FastAPI/Uvicorn can initialize, then exits.
-
-## Run the web UI
+## Run web UI
 
 ```bash
 ./scripts/run_web.sh
 ```
 
-Then open:
+Open:
 
 ```text
 http://<pi-ip>:8090
 ```
 
-Useful pages:
+## Optional screen renderer
 
-```text
-/
-/plugins
-/config
-/events
-/logs
-/hello
-/api/core/health
-/api/plugins
-/api/plugins/hello_norm/status
-```
-
-## Change the web port
-
-Temporary override:
+Install Pygame into the venv:
 
 ```bash
-./scripts/run_web.sh --port 8091
+./scripts/install_screen_deps.sh
 ```
 
-Permanent setting:
+Run web UI + screen face:
 
-```yaml
-# config/norm.yaml
-webui:
-  enabled: true
-  host: "0.0.0.0"
-  port: 8090
+```bash
+./scripts/run_screen.sh
 ```
 
-## Plugin route example
+Run screen face without web UI:
 
-`plugins/hello_norm/plugin.yaml`:
-
-```yaml
-webui:
-  enabled: true
-  route: "/hello"
-  label: "Hello"
+```bash
+./scripts/run_screen_only.sh
 ```
 
-Plugin API routes are automatically namespaced under:
+Useful URLs:
 
 ```text
-/api/plugins/<plugin_id>/...
+/face
+/api/core/face/status
+/api/core/face/preview.svg?pack=norm_default&state=annoyed
+/api/core/face/preview.svg?pack=norm_crt&state=speaking
+/api/core/face/preview.svg?pack=norm_void&state=error
 ```
 
-Plugin UI routes cannot override reserved core paths like `/`, `/config`, `/plugins`, `/api/core/*`, or `/api/plugins/*`.
+## Notes
 
-## Next milestone
-
-beta2-pre3 should begin the Face Core transplant:
-
-- `FaceService`
-- face state events
-- current procedural renderer wrapped as `norm_default`
-- basic face pack loader
-- basic face preview API
-- face selector shell in the web UI
-
+The old alpha touch config UI is intentionally not restored in this step. Pre3.5 only brings back the face display layer. Touch/screen config controls should become a dedicated `screenui` service later so the face renderer stays simple and stable.

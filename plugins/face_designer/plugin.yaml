@@ -1,0 +1,18 @@
+manifest_version: 1
+id: face_designer
+name: Face Designer
+version: 0.1.0-pre4
+entrypoint: main:Plugin
+enabled: true
+permissions:
+  - webui
+  - face
+  - filesystem
+  - events
+webui:
+  enabled: true
+  route: "/face-designer"
+  label: "Face Designer"
+  nav_enabled: true
+  nav_group: "Face"
+  icon: "face"

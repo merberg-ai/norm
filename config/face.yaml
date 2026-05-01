@@ -1,0 +1,76 @@
+config_version: 2
+
+active_pack: "norm_default"
+default_state: "idle"
+preview_width: 800
+preview_height: 480
+
+# The screen renderer is still opt-in. ./scripts/run_screen.sh temporarily
+# enables it for that run; set these true to make it persistent later.
+screen_enabled: false
+
+screen:
+  enabled: false
+  fullscreen: true
+  width: 800
+  height: 480
+  fps: 24
+  hide_mouse: true
+
+  # hotfix3 display/backend configuration
+  # driver/video_driver options: auto, x11, wayland, kmsdrm, fbcon, dummy
+  # Leave both as auto/blank unless your display needs a specific backend.
+  driver: "auto"
+  video_driver: ""
+  auto_driver_candidates:
+    - kmsdrm
+    - fbcon
+
+  # SSH/session helpers. For Raspberry Pi desktop launched over SSH, try:
+  #   display: ":0"
+  # For Wayland sessions, try:
+  #   wayland_display: "wayland-1"
+  #   xdg_runtime_dir: "/run/user/1000"
+  display: ""
+  wayland_display: ""
+  xdg_runtime_dir: ""
+  xauthority: ""
+
+  # Direct framebuffer / DRM helpers.
+  framebuffer: "/dev/fb0"
+  pygame_display: ""
+  window_position: ""
+  mouse_device: ""
+  mouse_driver: ""
+  kmsdrm_require_drm_master: true
+
+  # Let SDL/Pygame attempt startup instead of skipping too early. This gives us
+  # useful errors in /face and /api/core/face/screen/diagnostics.
+  preflight_enabled: false
+  require_display: false
+  force_without_display: true
+
+  audio_driver: "dummy"
+  render_driver: "software"
+
+  effects:
+    scanlines: true
+    scanline_spacing: 4
+    scanline_opacity: 36
+    vignette: true
+    vignette_strength: 90
+    crt_flicker: true
+    flicker_chance: 0.07
+    noise: true
+    noise_refresh_fps: 6
+    noise_pixels: 300
+
+ui:
+  show_face_nav: true
+  allow_preview_state_buttons: true
+
+# Used when the web cockpit and direct KMS screen face run as separate
+# processes. Web writes active_pack/state here; the screen polls it.
+runtime_sync:
+  enabled: true
+  poll_seconds: 0.25

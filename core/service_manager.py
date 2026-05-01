@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections import OrderedDict
 from typing import Iterable
 
@@ -29,15 +30,25 @@ class ServiceManager:
             )
 
     async def stop_all(self) -> None:
+        stop_timeout = int(self.context.config.get("runtime.service_stop_timeout_seconds", 5))
+        event_timeout = int(self.context.config.get("runtime.event_publish_timeout_seconds", 2))
         for service in reversed(list(self.services.values())):
             self.context.logger.info("Stopping service: %s", service.name)
             try:
-                await service.stop()
-                await self.context.events.publish(
-                    "service.stopped",
-                    {"service": service.name},
-                    source="service_manager",
-                )
+                await asyncio.wait_for(service.stop(), timeout=max(1, stop_timeout))
+                try:
+                    await asyncio.wait_for(
+                        self.context.events.publish(
+                            "service.stopped",
+                            {"service": service.name},
+                            source="service_manager",
+                        ),
+                        timeout=max(1, event_timeout),
+                    )
+                except asyncio.TimeoutError:
+                    self.context.logger.warning("Timed out publishing service.stopped for %s", service.name)
+            except asyncio.TimeoutError:
+                self.context.logger.warning("Timed out stopping service: %s", service.name)
             except Exception as exc:  # noqa: BLE001
                 self.context.logger.exception("Service failed during stop: %s", exc)
 

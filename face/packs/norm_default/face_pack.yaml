@@ -1,0 +1,93 @@
+config_version: 2
+id: "norm_default"
+name: "N.O.R.M. Default"
+description: "Amber terminal face based on the original N.O.R.M. alpha mood. Low CPU, high menace."
+renderer: "procedural"
+colors:
+  background: "#090604"
+  frame: "#ffae28"
+  primary: "#ffae28"
+  bright: "#ffe5a8"
+  dim: "#9b6422"
+  warning: "#ff5038"
+geometry:
+  eye_w: 170
+  eye_h: 92
+  eye_y: 150
+  eye_gap: 95
+  mouth_w: 330
+  mouth_y: 325
+states:
+  sleeping:
+    label: "SLEEP"
+    mood: "sleeping"
+    mouth: "flat"
+    blink: 1
+    brow: "bored"
+  idle:
+    label: "IDLE"
+    mood: "idle"
+    mouth: "idle"
+    pupil_dx: 6
+    pupil_dy: 0
+  wake_detected:
+    label: "WAKE"
+    mood: "wake"
+    mouth: "idle"
+    pupil_dx: 0
+    pupil_dy: -4
+    bright: "#fff1bb"
+  listening:
+    label: "LISTEN"
+    mood: "listening"
+    mouth: "flat"
+    pupil_dx: -5
+    pupil_dy: 0
+    bright: "#fff3c8"
+  thinking:
+    label: "THINK"
+    mood: "thinking"
+    mouth: "thinking"
+    pupil_dx: 0
+    pupil_dy: 0
+  speaking:
+    label: "SPEAK"
+    mood: "speaking"
+    mouth: "speaking"
+    bright: "#fff8d2"
+  happy:
+    label: "PLEASED"
+    mood: "happy"
+    mouth: "idle"
+    pupil_dx: 0
+    pupil_dy: -5
+  annoyed:
+    label: "ANNOYED"
+    mood: "annoyed"
+    mouth: "frown"
+    brow: "angry"
+    pupil_dx: 12
+    pupil_dy: -3
+  confused:
+    label: "CONFUSED"
+    mood: "confused"
+    mouth: "thinking"
+    brow: "worried"
+    pupil_dx: -16
+    pupil_dy: 3
+  error:
+    label: "ERROR"
+    mood: "error"
+    mouth: "error"
+    brow: "angry"
+    warning: "#ff3535"
+    glitch: true
+  emergency:
+    label: "STOP"
+    mood: "emergency"
+    mouth: "error"
+    brow: "angry"
+    warning: "#ff0000"
+    primary: "#ff3b1f"
+    bright: "#ffd6d0"
+    glitch: true

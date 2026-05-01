@@ -36,7 +36,6 @@ def _validate_version(path: Path, data: dict[str, Any]) -> None:
             f"this runtime supports up to {SUPPORTED_CONFIG_VERSION}"
         )
     if version < SUPPORTED_CONFIG_VERSION:
-        # Pre1 does not migrate old configs yet. Better to stop than corrupt settings.
         raise ConfigError(
             f"{path} uses old config_version={version}; "
             f"migration support is not implemented yet"
@@ -73,9 +72,13 @@ class ConfigBundle:
     norm: dict[str, Any]
     plugins: dict[str, Any]
     config_dir: Path
+    face: dict[str, Any] | None = None
 
     def get(self, dotted_key: str, default: Any = None) -> Any:
         return get_path(self.norm, dotted_key, default)
+
+    def face_get(self, dotted_key: str, default: Any = None) -> Any:
+        return get_path(self.face or {}, dotted_key, default)
 
     def plugin_overrides(self, plugin_id: str) -> dict[str, Any]:
         plugins = self.plugins.get("plugins", {})
@@ -93,12 +96,16 @@ class ConfigManager:
     def load(self) -> ConfigBundle:
         norm_path = self.config_dir / "norm.yaml"
         plugins_path = self.config_dir / "plugins.yaml"
+        face_path = self.config_dir / "face.yaml"
 
         norm = _read_yaml(norm_path)
         plugins = _read_yaml(plugins_path)
+        face = _read_yaml(face_path) if face_path.exists() else {"config_version": SUPPORTED_CONFIG_VERSION}
 
         _validate_version(norm_path, norm)
         _validate_version(plugins_path, plugins)
+        if face_path.exists():
+            _validate_version(face_path, face)
 
-        self.bundle = ConfigBundle(norm=norm, plugins=plugins, config_dir=self.config_dir)
+        self.bundle = ConfigBundle(norm=norm, plugins=plugins, face=face, config_dir=self.config_dir)
         return self.bundle

@@ -1,0 +1,78 @@
+config_version: 2
+id: "norm_crt"
+name: "N.O.R.M. CRT Relic"
+description: "Warmer old-monitor face for the Mr. House-ish retro terminal direction."
+renderer: "procedural"
+colors:
+  background: "#070503"
+  frame: "#f0a33a"
+  primary: "#d88b2c"
+  bright: "#ffd38a"
+  dim: "#7b5428"
+  warning: "#ff6b3c"
+geometry:
+  eye_w: 160
+  eye_h: 86
+  eye_y: 155
+  eye_gap: 115
+  mouth_w: 360
+  mouth_y: 328
+states:
+  sleeping:
+    label: "STANDBY"
+    mood: "sleeping"
+    mouth: "flat"
+    blink: 1
+    brow: "bored"
+  idle:
+    label: "WATCH"
+    mood: "idle"
+    mouth: "idle"
+    pupil_dx: -8
+  wake_detected:
+    label: "SIGNAL"
+    mood: "wake"
+    mouth: "idle"
+    pupil_dy: -3
+  listening:
+    label: "RECV"
+    mood: "listening"
+    mouth: "flat"
+  thinking:
+    label: "CALC"
+    mood: "thinking"
+    mouth: "thinking"
+  speaking:
+    label: "XMIT"
+    mood: "speaking"
+    mouth: "speaking"
+  happy:
+    label: "GOOD"
+    mood: "happy"
+    mouth: "idle"
+    pupil_dy: -5
+  annoyed:
+    label: "HMMM"
+    mood: "annoyed"
+    mouth: "frown"
+    brow: "angry"
+    pupil_dx: 10
+  confused:
+    label: "???"
+    mood: "confused"
+    mouth: "thinking"
+    brow: "worried"
+  error:
+    label: "FAULT"
+    mood: "error"
+    mouth: "error"
+    brow: "angry"
+    glitch: true
+  emergency:
+    label: "HALT"
+    mood: "emergency"
+    mouth: "error"
+    brow: "angry"
+    primary: "#ff542e"
+    bright: "#ffd5c7"
+    glitch: true

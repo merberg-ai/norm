@@ -1,3 +1,12 @@
-PyYAML>=6.0.1
+# N.O.R.M. beta2 core/web dependencies.
+# Keep this Pi-friendly: DO NOT use uvicorn[standard].
+# uvicorn[standard] pulls uvloop/httptools, which can compile slowly/fail on Pi.
 fastapi>=0.110
-uvicorn[standard]>=0.27
+uvicorn>=0.27
+jinja2>=3.1
+requests>=2.31
+PyYAML>=6.0
+
+# Optional screen-face dependency:
+#   ./scripts/install_screen_deps.sh
+# installs pygame separately so web/headless installs do not get dragged into SDL trouble.

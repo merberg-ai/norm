@@ -1,0 +1,17 @@
+[Unit]
+Description=N.O.R.M. beta2 screen face
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+User=jim
+WorkingDirectory=/home/jim/norm
+Environment=SDL_VIDEODRIVER=kmsdrm
+Environment=SDL_RENDER_DRIVER=software
+Environment=SDL_AUDIODRIVER=dummy
+ExecStart=/home/jim/norm/.venv/bin/python /home/jim/norm/app.py --screen-direct
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+config_version: 2
+
+plugins:
+  face_designer:
+    enabled: true
+    webui:
+      enabled: true
+      route: "/face-designer"
+      label: "Face Designer"
+      nav_enabled: true

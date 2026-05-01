@@ -1,0 +1,13 @@
+config_version: 2
+
+editor:
+  allow_builtin_duplicate: true
+  allow_advanced_yaml: true
+  backup_before_save: true
+  default_duplicate_prefix: "custom"
+  max_yaml_bytes: 200000
+
+preview:
+  default_state: "idle"
+  width: 800
+  height: 480

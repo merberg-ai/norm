@@ -10,7 +10,7 @@ from core.service import BaseService, ServiceHealth
 
 
 class WebUIService(BaseService):
-    """FastAPI web cockpit shell for beta2-pre2.
+    """FastAPI web cockpit shell for beta2-pre4.
 
     This service intentionally stays tiny. It exposes core health/config/events,
     plugin health, and configurable plugin landing routes. Later pre-releases can
@@ -98,7 +98,7 @@ class WebUIService(BaseService):
     def _build_app(self):
         try:
             from fastapi import FastAPI
-            from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+            from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
             from fastapi.staticfiles import StaticFiles
         except Exception as exc:  # noqa: BLE001
             raise RuntimeError(
@@ -119,6 +119,10 @@ class WebUIService(BaseService):
         @app.get("/plugins", response_class=HTMLResponse)
         async def plugins_page():
             return self._page("Plugins", await self._render_plugins_page())
+
+        @app.get("/face", response_class=HTMLResponse)
+        async def face_page():
+            return self._page("Face", self._render_face_page())
 
         @app.get("/config", response_class=HTMLResponse)
         async def config_page():
@@ -141,11 +145,53 @@ class WebUIService(BaseService):
             return {
                 "norm": self.context.config.norm,
                 "plugins": self.context.config.plugins,
+                "face": self.context.config.face or {},
             }
 
         @app.get("/api/core/events", response_class=JSONResponse)
         async def api_events():
             return {"events": [self._event_to_dict(event) for event in self.context.events.history()]}
+
+        @app.get("/api/core/face/status", response_class=JSONResponse)
+        async def api_face_status():
+            face = self._face_service()
+            if face is None:
+                return JSONResponse({"ok": False, "error": "face service not available"}, status_code=404)
+            return face.status_payload()
+
+        @app.get("/api/core/face/screen/diagnostics", response_class=JSONResponse)
+        async def api_face_screen_diagnostics():
+            face = self._face_service()
+            if face is None:
+                return JSONResponse({"ok": False, "error": "face service not available"}, status_code=404)
+            return face.screen_diagnostics_payload()
+
+        @app.post("/api/core/face/state/{state}", response_class=JSONResponse)
+        async def api_face_set_state(state: str):
+            face = self._face_service()
+            if face is None:
+                return JSONResponse({"ok": False, "error": "face service not available"}, status_code=404)
+            ok = await face.set_state(state, source="webui")
+            return {"ok": ok, "status": face.status_payload()}
+
+        @app.post("/api/core/face/pack/{pack_id}", response_class=JSONResponse)
+        async def api_face_set_pack(pack_id: str):
+            face = self._face_service()
+            if face is None:
+                return JSONResponse({"ok": False, "error": "face service not available"}, status_code=404)
+            ok = await face.set_active_pack(pack_id, source="webui")
+            return {"ok": ok, "status": face.status_payload()}
+
+        @app.get("/api/core/face/preview.svg")
+        async def api_face_preview_svg(pack: str | None = None, state: str | None = None):
+            face = self._face_service()
+            if face is None:
+                return PlainTextResponse("face service not available", status_code=404)
+            try:
+                svg = face.render_preview_svg(pack_id=pack, state=state)
+                return Response(svg, media_type="image/svg+xml")
+            except Exception as exc:  # noqa: BLE001
+                return PlainTextResponse(f"face preview failed: {exc}", status_code=500)
 
         @app.get("/api/plugins", response_class=JSONResponse)
         async def api_plugins():
@@ -171,9 +217,15 @@ class WebUIService(BaseService):
                 payload["plugin_status"] = result
             return payload
 
-        # Configurable plugin landing routes, e.g. /hello or later /servos.
+        # Plugin-owned API/page routes, mounted through Starlette so FastAPI/Pydantic
+        # does not inspect plugin callables or app-context object graphs.
         plugin_manager = self.context.services.services.get("plugin_manager")
         if plugin_manager is not None:
+            for record in plugin_manager.records.values():
+                if record.enabled and record.instance is not None:
+                    self._mount_plugin_custom_routes(app, record, HTMLResponse, JSONResponse, PlainTextResponse, Response)
+
+            # Configurable plugin landing routes, e.g. /hello, /face-designer, or later /servos.
             for record in plugin_manager.records.values():
                 if not record.enabled or not record.webui_route:
                     continue
@@ -181,26 +233,103 @@ class WebUIService(BaseService):
 
         return app
 
+    def _mount_plugin_custom_routes(self, app, record, HTMLResponse, JSONResponse, PlainTextResponse, Response) -> None:
+        """Mount plugin-declared API/web routes safely.
+
+        Plugins return route specs from get_api_routes(). Handlers are called
+        manually from a Starlette route wrapper, so FastAPI never tries to
+        dependency-inject plugin objects.
+        """
+        if not record.instance:
+            return
+        route_specs = []
+        if hasattr(record.instance, "get_api_routes"):
+            try:
+                result = record.instance.get_api_routes()
+                route_specs.extend(result or [])
+            except Exception as exc:  # noqa: BLE001
+                self.context.logger.exception("Plugin API route discovery failed: %s", record.plugin_id)
+                return
+        for spec in route_specs:
+            if not isinstance(spec, dict):
+                continue
+            suffix = str(spec.get("path") or "").strip()
+            if not suffix:
+                continue
+            if not suffix.startswith("/"):
+                suffix = "/" + suffix
+            full_path = f"/api/plugins/{record.plugin_id}{suffix}"
+            methods = spec.get("methods") or ["GET"]
+            if isinstance(methods, str):
+                methods = [methods]
+            methods = [str(m).upper() for m in methods]
+            handler = spec.get("handler")
+            if handler is None or not callable(handler):
+                continue
+            self._mount_plugin_endpoint(app, record, full_path, methods, handler, HTMLResponse, JSONResponse, PlainTextResponse, Response)
+            self.bound_routes.append(full_path)
+
+    def _mount_plugin_endpoint(self, app, record, path, methods, handler, HTMLResponse, JSONResponse, PlainTextResponse, Response) -> None:
+        bound_handler = handler
+        bound_record = record
+        bound_path = path
+
+        async def plugin_endpoint(request):
+            try:
+                result = bound_handler(request)
+                if inspect.isawaitable(result):
+                    result = await result
+                return self._plugin_result_to_response(result, HTMLResponse, JSONResponse, PlainTextResponse, Response)
+            except Exception as exc:  # noqa: BLE001
+                self.context.logger.exception("Plugin endpoint failed: %s %s", bound_record.plugin_id, bound_path)
+                return JSONResponse({"ok": False, "error": str(exc), "plugin": bound_record.plugin_id}, status_code=500)
+
+        app.add_route(path, plugin_endpoint, methods=methods)
+
+    def _plugin_result_to_response(self, result, HTMLResponse, JSONResponse, PlainTextResponse, Response):
+        if isinstance(result, Response):
+            return result
+        if isinstance(result, (dict, list)):
+            return JSONResponse(result)
+        if isinstance(result, bytes):
+            return Response(result)
+        text = "" if result is None else str(result)
+        stripped = text.lstrip().lower()
+        if stripped.startswith("<!doctype") or stripped.startswith("<html"):
+            return HTMLResponse(text)
+        return PlainTextResponse(text)
+
     def _mount_plugin_route(self, app, record, HTMLResponse, PlainTextResponse) -> None:
         route = record.webui_route
         if not route:
             return
         self.bound_routes.append(route)
 
-        async def plugin_page(record=record):
+        # Do not bind PluginRecord as a default route argument. FastAPI/Pydantic
+        # treats default arguments as request parameters and tries to deepcopy
+        # the whole PluginRecord/AppContext graph, which causes recursion on
+        # Python 3.13. Capture it in a closure instead.
+        bound_record = record
+
+        async def plugin_page(request):  # Starlette route endpoint; request is intentionally accepted.
             try:
-                if record.instance and hasattr(record.instance, "render_web_page"):
-                    result = record.instance.render_web_page()
+                if bound_record.instance and hasattr(bound_record.instance, "render_web_page"):
+                    result = bound_record.instance.render_web_page()
                     if inspect.isawaitable(result):
                         result = await result
                     return HTMLResponse(str(result))
-                body = self._render_plugin_landing(record)
-                return HTMLResponse(self._page(record.manifest.get("name", record.plugin_id), body))
+                body = self._render_plugin_landing(bound_record)
+                return HTMLResponse(self._page(bound_record.manifest.get("name", bound_record.plugin_id), body))
             except Exception as exc:  # noqa: BLE001
-                self.context.logger.exception("Plugin route failed: %s", record.plugin_id)
+                self.context.logger.exception("Plugin route failed: %s", bound_record.plugin_id)
                 return PlainTextResponse(f"Plugin route failed: {exc}", status_code=500)
 
-        app.add_api_route(route, plugin_page, methods=["GET"], response_class=HTMLResponse)
+        # Use Starlette's plain route layer for plugin landing pages.
+        # FastAPI's add_api_route inspects endpoint signatures with Pydantic.
+        # That is great for typed API handlers, but bad for dynamic plugin pages
+        # because plugin closures can drag the AppContext/PluginRecord object graph
+        # into dependency analysis. app.add_route bypasses that machinery.
+        app.add_route(route, plugin_page, methods=["GET"])
 
     def _page(self, title: str, body: str) -> str:
         nav = self._render_nav()
@@ -221,7 +350,7 @@ class WebUIService(BaseService):
         <div class=\"kicker\">Neural Overseer for Routine Management</div>
         <h1>N.O.R.M. beta2</h1>
       </div>
-      <div class=\"status-pill\">pre2 web shell</div>
+      <div class=\"status-pill\">pre3.5 face screen</div>
     </header>
     {nav}
     <section class=\"content\">{body}</section>
@@ -233,6 +362,7 @@ class WebUIService(BaseService):
         items = [
             ("/", "Dashboard"),
             ("/plugins", "Plugins"),
+            ("/face", "Face"),
             ("/config", "Config"),
             ("/events", "Events"),
             ("/logs", "Logs"),
@@ -303,10 +433,12 @@ class WebUIService(BaseService):
 
         norm = html.escape(json.dumps(self.context.config.norm, indent=2, sort_keys=True))
         plugins = html.escape(json.dumps(self.context.config.plugins, indent=2, sort_keys=True))
+        face = html.escape(json.dumps(self.context.config.face or {}, indent=2, sort_keys=True))
         return f"""
         <div class=\"grid\">
           <div class=\"card wide\"><div class=\"card-title\">config/norm.yaml</div><pre>{norm}</pre></div>
           <div class=\"card wide\"><div class=\"card-title\">config/plugins.yaml</div><pre>{plugins}</pre></div>
+          <div class=\"card wide\"><div class=\"card-title\">config/face.yaml</div><pre>{face}</pre></div>
         </div>
         """
 
@@ -343,6 +475,88 @@ class WebUIService(BaseService):
           <ul>{''.join(files) or '<li>No log files yet.</li>'}</ul>
         </div>
         """
+
+
+    def _face_service(self):
+        return self.context.services.services.get("face")
+
+    def _render_face_page(self) -> str:
+        face = self._face_service()
+        if face is None:
+            return '<div class="card wide bad"><div class="card-title">Face service</div><p>Face service is not available.</p></div>'
+        status = face.status_payload()
+        active_pack = html.escape(str(status.get("active_pack")))
+        state = html.escape(str(status.get("state")))
+        preview = f'/api/core/face/preview.svg?pack={active_pack}&state={state}'
+        screen = status.get("screen") or {}
+        screen_line = html.escape(
+            f"configured={screen.get('configured_enabled')} running={screen.get('running')} "
+            f"{screen.get('width')}x{screen.get('height')} fullscreen={screen.get('fullscreen')} "
+            f"driver={screen.get('video_driver') or screen.get('requested_video_driver') or 'unknown'} "
+            f"skip={screen.get('skip_reason') or ''}"
+        )
+        screen_error = html.escape(str(screen.get("last_error") or ""))
+        screen_attempts = html.escape(str(screen.get("attempts") or []))
+
+        state_buttons = []
+        for face_state in status.get("states", []):
+            safe_state = html.escape(str(face_state))
+            state_buttons.append(
+                f'<button class="norm-btn" data-face-state="{safe_state}">{safe_state}</button>'
+            )
+
+        pack_cards = []
+        for pack in status.get("packs", []):
+            pack_id = html.escape(str(pack.get("id")))
+            pack_name = html.escape(str(pack.get("name")))
+            pack_desc = html.escape(str(pack.get("description")))
+            renderer = html.escape(str(pack.get("renderer")))
+            active_class = " active-face-pack" if pack_id == active_pack else ""
+            pack_cards.append(
+                f'''<div class="card{active_class}">
+                    <div class="card-title">{pack_name}</div>
+                    <p><code>{pack_id}</code></p>
+                    <p class="muted">{pack_desc}</p>
+                    <p><b>Renderer:</b> {renderer}</p>
+                    <button class="norm-btn" data-face-pack="{pack_id}">Activate</button>
+                </div>'''
+            )
+
+        errors = status.get("errors") or []
+        error_html = ""
+        if errors:
+            error_html = '<div class="card wide bad"><div class="card-title">Face pack errors</div><ul>' + "".join(
+                f"<li>{html.escape(str(err))}</li>" for err in errors
+            ) + "</ul></div>"
+
+        return f'''
+        <div class="grid face-grid">
+          <div class="card wide">
+            <div class="card-title">Face core</div>
+            <p><b>Active pack:</b> <code id="active-pack">{active_pack}</code></p>
+            <p><b>Current state:</b> <code id="active-state">{state}</code></p>
+            <p><b>Screen:</b> <code id="screen-status">{screen_line}</code></p>
+            <p><b>Screen error:</b> <code>{screen_error or 'none'}</code></p>
+            <p><b>Driver attempts:</b> <code>{screen_attempts}</code></p>
+            <p><a href="/api/core/face/screen/diagnostics">Screen diagnostics JSON</a></p>
+            <p class="muted">Pre3.5 hotfix3 keeps SVG previews and makes the Pygame display backend configurable. If the screen is enabled, it follows the same active pack and state.</p>
+          </div>
+          <div class="card wide face-preview-card">
+            <div class="card-title">Preview</div>
+            <img id="face-preview" class="face-preview" src="{preview}" alt="N.O.R.M. face preview">
+          </div>
+          <div class="card wide">
+            <div class="card-title">State test buttons</div>
+            <div class="button-row">{''.join(state_buttons)}</div>
+          </div>
+          <div class="card wide">
+            <div class="card-title">Face packs</div>
+            <div class="grid">{''.join(pack_cards)}</div>
+          </div>
+          {error_html}
+        </div>
+        <script src="/static/face.js"></script>
+        '''
 
     def _render_plugin_landing(self, record) -> str:
         return f"""

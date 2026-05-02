@@ -1,0 +1,31 @@
+config_version: 2
+
+brain:
+  enabled: true
+  provider: "ollama"
+
+ollama:
+  host: "http://192.168.1.24:11434"
+  model: "llama3.1:8b"
+  request_timeout_seconds: 120
+  models_timeout_seconds: 8
+  models_cache_seconds: 30
+  keep_alive: "5m"
+  options:
+    temperature: 0.7
+    top_p: 0.9
+    num_ctx: 4096
+
+behavior:
+  speak_responses: true
+  browser_only_tts: false
+  face_reactions: true
+  system_prompt: |
+    You are N.O.R.M. — Neural Overseer for Routine Management.
+    You are a local Raspberry Pi robot assistant with a dark amber screen face.
+    Be helpful, concise, slightly eerie, and practical. Do not claim to control
+    hardware unless a safe tool/plugin is available.
+
+webui:
+  test_message: "N.O.R.M., confirm your brain service is online."
+  show_raw_debug: false

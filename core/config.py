@@ -73,6 +73,8 @@ class ConfigBundle:
     plugins: dict[str, Any]
     config_dir: Path
     face: dict[str, Any] | None = None
+    audio: dict[str, Any] | None = None
+    brain: dict[str, Any] | None = None
 
     def get(self, dotted_key: str, default: Any = None) -> Any:
         return get_path(self.norm, dotted_key, default)
@@ -97,15 +99,23 @@ class ConfigManager:
         norm_path = self.config_dir / "norm.yaml"
         plugins_path = self.config_dir / "plugins.yaml"
         face_path = self.config_dir / "face.yaml"
+        audio_path = self.config_dir / "audio.yaml"
+        brain_path = self.config_dir / "brain.yaml"
 
         norm = _read_yaml(norm_path)
         plugins = _read_yaml(plugins_path)
         face = _read_yaml(face_path) if face_path.exists() else {"config_version": SUPPORTED_CONFIG_VERSION}
+        audio = _read_yaml(audio_path) if audio_path.exists() else {"config_version": SUPPORTED_CONFIG_VERSION}
+        brain = _read_yaml(brain_path) if brain_path.exists() else {"config_version": SUPPORTED_CONFIG_VERSION}
 
         _validate_version(norm_path, norm)
         _validate_version(plugins_path, plugins)
         if face_path.exists():
             _validate_version(face_path, face)
+        if audio_path.exists():
+            _validate_version(audio_path, audio)
+        if brain_path.exists():
+            _validate_version(brain_path, brain)
 
-        self.bundle = ConfigBundle(norm=norm, plugins=plugins, face=face, config_dir=self.config_dir)
+        self.bundle = ConfigBundle(norm=norm, plugins=plugins, face=face, audio=audio, brain=brain, config_dir=self.config_dir)
         return self.bundle

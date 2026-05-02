@@ -24,9 +24,13 @@ else
   fi
 fi
 
-# shellcheck disable=SC1091
-source .venv/bin/activate
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install -r requirements.txt
+".venv/bin/python" -m pip install --upgrade pip setuptools wheel
+".venv/bin/python" -m pip install -r requirements.txt
 
-printf '\nDependencies installed. Try:\n  source .venv/bin/activate\n  ./scripts/run_web.sh\n\nFor the Pi screen renderer, run:\n  ./scripts/repair_pygame_display.sh\n  ./scripts/run_screen.sh\n\n'
+# Keep script permissions sane after ZIP uploads/overlays.
+chmod +x scripts/*.sh
+
+printf '\n[N.O.R.M.] Dependencies installed. Try:\n  ./scripts/run_once.sh\n  ./scripts/run_web.sh\n\nFor audio/TTS extras:
+  ./scripts/install_audio_deps.sh
+
+For web + physical screen together:\n  ./scripts/repair_pygame_display.sh\n  ./scripts/run_full.sh\n\n'

@@ -12,6 +12,14 @@ from core.plugin_manager import PluginManagerService
 from core.service_manager import ServiceManager
 from face.service import FaceService
 from webui.service import WebUIService
+try:
+    from audio.service import AudioService
+except Exception:  # noqa: BLE001
+    AudioService = None  # type: ignore
+try:
+    from brain.service import BrainService
+except Exception:  # noqa: BLE001
+    BrainService = None  # type: ignore
 
 
 @dataclass
@@ -42,9 +50,13 @@ class AppContext:
         return placeholder
 
     def register_core_services(self) -> None:
-        # Face starts before plugin/web UI so plugins and web routes can talk to it.
+        # Face starts before audio/plugin/web UI so services can drive face states.
         if bool(self.config.get("services.face.enabled", True)):
             self.services.register(FaceService(self))
+        if bool(self.config.get("services.audio.enabled", True)) and AudioService is not None:
+            self.services.register(AudioService(self))
+        if bool(self.config.get("services.brain.enabled", True)) and BrainService is not None:
+            self.services.register(BrainService(self))
         # PluginManager starts before WebUI so WebUI can mount configurable plugin routes.
         self.services.register(PluginManagerService(self))
         if bool(self.config.get("services.webui.enabled", True)):

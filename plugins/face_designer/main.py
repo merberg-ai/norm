@@ -123,6 +123,7 @@ class Plugin:
             {"path": "/packs/{pack_id}", "methods": ["GET"], "handler": self.api_pack},
             {"path": "/packs/{pack_id}/duplicate", "methods": ["POST"], "handler": self.api_duplicate_pack},
             {"path": "/packs/{pack_id}/save", "methods": ["POST"], "handler": self.api_save_pack},
+            {"path": "/packs/{pack_id}/style", "methods": ["POST"], "handler": self.api_update_style},
             {"path": "/packs/{pack_id}/activate", "methods": ["POST"], "handler": self.api_activate_pack},
             {"path": "/packs/{pack_id}/preview", "methods": ["GET", "POST"], "handler": self.api_preview_pack},
         ]
@@ -289,6 +290,174 @@ class Plugin:
             face.load_face_packs()
             self.context.logger.exception("Face pack save failed; restored previous file")
             return _json_response({"ok": False, "error": str(exc), "restored": True}, status_code=400)
+    async def api_update_style(self, request):
+        """Patch common procedural face-pack settings from the visual controls."""
+        face = self._face()
+        if face is None:
+            return _json_response({"ok": False, "error": "FaceService is not available"}, status_code=404)
+        pack_id = request.path_params.get("pack_id")
+        pack = face.face_packs.get(pack_id)
+        if pack is None:
+            return _json_response({"ok": False, "error": f"Face pack not found: {pack_id}"}, status_code=404)
+        if pack.readonly:
+            return _json_response(
+                {"ok": False, "error": "Built-in face packs are read-only. Duplicate it first, then edit the copy."},
+                status_code=403,
+            )
+
+        data = await self._json_body(request)
+        cfg = copy.deepcopy(pack.config)
+        changed: list[str] = []
+
+        def normalize_color(value: Any) -> str | None:
+            value = str(value or "").strip()
+            if re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+                return value.lower()
+            if re.fullmatch(r"#[0-9a-fA-F]{3}", value):
+                return "#" + "".join(ch * 2 for ch in value[1:]).lower()
+            return None
+
+        def clean_number(value: Any, *, minimum: float, maximum: float, integer: bool = True) -> int | float | None:
+            try:
+                number = float(value)
+            except (TypeError, ValueError):
+                return None
+            number = max(minimum, min(maximum, number))
+            return int(round(number)) if integer else number
+
+        colors_in = data.get("colors") if isinstance(data.get("colors"), dict) else {}
+        if colors_in:
+            colors = cfg.setdefault("colors", {})
+            if not isinstance(colors, dict):
+                colors = {}
+                cfg["colors"] = colors
+            for key in ["background", "frame", "primary", "bright", "dim", "warning"]:
+                if key in colors_in:
+                    color = normalize_color(colors_in.get(key))
+                    if color is None:
+                        return _json_response({"ok": False, "error": f"Invalid color for {key}"}, status_code=400)
+                    colors[key] = color
+                    changed.append(f"colors.{key}")
+
+        geometry_in = data.get("geometry") if isinstance(data.get("geometry"), dict) else {}
+        if geometry_in:
+            geometry = cfg.setdefault("geometry", {})
+            if not isinstance(geometry, dict):
+                geometry = {}
+                cfg["geometry"] = geometry
+            limits = {
+                "eye_w": (40, 320),
+                "eye_h": (16, 180),
+                "eye_y": (40, 290),
+                "eye_gap": (0, 260),
+                "mouth_w": (60, 620),
+                "mouth_y": (210, 440),
+            }
+            for key, (minimum, maximum) in limits.items():
+                if key in geometry_in:
+                    number = clean_number(geometry_in.get(key), minimum=minimum, maximum=maximum)
+                    if number is None:
+                        return _json_response({"ok": False, "error": f"Invalid geometry number for {key}"}, status_code=400)
+                    geometry[key] = number
+                    changed.append(f"geometry.{key}")
+
+        state_name = str(data.get("state") or "idle").strip()
+        state_in = data.get("state_config") if isinstance(data.get("state_config"), dict) else {}
+        if state_in:
+            states = cfg.setdefault("states", {})
+            if not isinstance(states, dict):
+                states = {}
+                cfg["states"] = states
+            state_cfg = states.setdefault(state_name, {})
+            if not isinstance(state_cfg, dict):
+                state_cfg = {}
+                states[state_name] = state_cfg
+
+            for key in ["label", "mood"]:
+                if key in state_in:
+                    value = str(state_in.get(key) or "").strip()
+                    if value:
+                        state_cfg[key] = value[:64]
+                        changed.append(f"states.{state_name}.{key}")
+            if "mouth" in state_in:
+                mouth = str(state_in.get("mouth") or "idle").strip()
+                if mouth not in {"idle", "flat", "thinking", "speaking", "error", "frown"}:
+                    return _json_response({"ok": False, "error": f"Invalid mouth value: {mouth}"}, status_code=400)
+                state_cfg["mouth"] = mouth
+                changed.append(f"states.{state_name}.mouth")
+            if "brow" in state_in:
+                brow = str(state_in.get("brow") or "flat").strip()
+                if brow not in {"flat", "angry", "worried", "bored"}:
+                    return _json_response({"ok": False, "error": f"Invalid brow value: {brow}"}, status_code=400)
+                state_cfg["brow"] = brow
+                changed.append(f"states.{state_name}.brow")
+            for key in ["pupil_dx", "pupil_dy"]:
+                if key in state_in:
+                    number = clean_number(state_in.get(key), minimum=-60, maximum=60)
+                    if number is None:
+                        return _json_response({"ok": False, "error": f"Invalid state number for {key}"}, status_code=400)
+                    state_cfg[key] = number
+                    changed.append(f"states.{state_name}.{key}")
+            if "blink" in state_in:
+                number = clean_number(state_in.get("blink"), minimum=0, maximum=1, integer=False)
+                if number is None:
+                    return _json_response({"ok": False, "error": "Invalid blink value"}, status_code=400)
+                state_cfg["blink"] = round(float(number), 2)
+                changed.append(f"states.{state_name}.blink")
+            if "glitch" in state_in:
+                state_cfg["glitch"] = bool(state_in.get("glitch"))
+                changed.append(f"states.{state_name}.glitch")
+            for key in ["primary", "bright", "dim", "warning"]:
+                if key in state_in:
+                    raw = str(state_in.get(key) or "").strip()
+                    if raw:
+                        color = normalize_color(raw)
+                        if color is None:
+                            return _json_response({"ok": False, "error": f"Invalid state color for {key}"}, status_code=400)
+                        state_cfg[key] = color
+                        changed.append(f"states.{state_name}.{key}")
+
+        if not changed:
+            return _json_response({"ok": False, "error": "No style fields supplied"}, status_code=400)
+
+        cfg["config_version"] = SUPPORTED_CONFIG_VERSION
+        cfg["id"] = pack_id
+        if not cfg.get("renderer"):
+            cfg["renderer"] = "procedural"
+
+        target = pack.path / "face_pack.yaml"
+        old_text = target.read_text(encoding="utf-8")
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup = self.backup_dir / f"{pack_id}-{timestamp}-style.yaml.bak"
+
+        try:
+            if self.record.config.get("editor", {}).get("backup_before_save", True):
+                backup.write_text(old_text, encoding="utf-8")
+            target.write_text(_dump_yaml(cfg), encoding="utf-8")
+            load_face_pack(pack.path, readonly=False)
+            face.load_face_packs()
+            if pack_id not in face.face_packs:
+                raise FacePackError("Updated pack did not reload correctly")
+            await self.context.events.publish(
+                "face_designer.pack.style_saved",
+                {"pack_id": pack_id, "changed": changed, "backup": str(backup) if backup.exists() else None},
+                source=self.record.plugin_id,
+            )
+            new_pack = face.face_packs[pack_id]
+            return {
+                "ok": True,
+                "pack": self._pack_summary(new_pack),
+                "config": new_pack.config,
+                "yaml": _dump_yaml(new_pack.config),
+                "changed": changed,
+                "backup": str(backup) if backup.exists() else None,
+            }
+        except Exception as exc:  # noqa: BLE001
+            target.write_text(old_text, encoding="utf-8")
+            face.load_face_packs()
+            self.context.logger.exception("Face pack visual style save failed; restored previous file")
+            return _json_response({"ok": False, "error": str(exc), "restored": True}, status_code=400)
+
 
     async def api_activate_pack(self, request):
         face = self._face()
@@ -333,7 +502,7 @@ class Plugin:
   <main class=\"shell\">
     <header class=\"topbar\">
       <div><div class=\"kicker\">Face pack containment lab</div><h1>{title}</h1></div>
-      <div class=\"status-pill\">pre4.1 plugin</div>
+      <div class=\"status-pill\">pre4.5 plugin</div>
     </header>
     <nav class=\"nav\"><a href=\"/\">Dashboard</a><a href=\"/face\">Face</a><a href=\"/plugins\">Plugins</a><a href=\"/events\">Events</a></nav>
     <section class=\"content\">
@@ -370,15 +539,60 @@ class Plugin:
               <img id=\"previewImg\" class=\"face-preview\" alt=\"Face preview\">
             </div>
           </div>
-          <div class=\"card designer-editor\">
-            <div class=\"card-title\">Advanced YAML Editor</div>
-            <p class=\"muted form-hint\">For pre4, this is the main editor. The pretty sliders come next. Backup is made before save.</p>
-            <textarea id=\"yamlEditor\" class=\"norm-textarea\" spellcheck=\"false\"></textarea>
-            <div class=\"button-row\">
-              <button id=\"saveBtn\" class=\"norm-btn\">Save YAML</button>
-              <button id=\"reloadBtn\" class=\"norm-btn\">Reload selected pack</button>
+          <div class="card designer-visual">
+            <div class="card-title">Visual Controls</div>
+            <p class="muted form-hint">Edit the common procedural face settings without hand-feeding YAML to the goblin.</p>
+            <div class="designer-tabs" role="tablist" aria-label="Designer sections">
+              <button class="norm-btn tab-btn active" data-tab="colors" type="button">Colors</button>
+              <button class="norm-btn tab-btn" data-tab="geometry" type="button">Geometry</button>
+              <button class="norm-btn tab-btn" data-tab="state" type="button">State</button>
             </div>
-            <pre id=\"statusBox\" class=\"status-log\">Route: {route}\nAPI: {api}</pre>
+            <div class="visual-panel" data-panel="colors">
+              <div class="control-grid compact">
+                <label>Background <input id="color_background" type="color" class="color-input"></label>
+                <label>Frame <input id="color_frame" type="color" class="color-input"></label>
+                <label>Primary <input id="color_primary" type="color" class="color-input"></label>
+                <label>Bright <input id="color_bright" type="color" class="color-input"></label>
+                <label>Dim <input id="color_dim" type="color" class="color-input"></label>
+                <label>Warning <input id="color_warning" type="color" class="color-input"></label>
+              </div>
+            </div>
+            <div class="visual-panel hidden" data-panel="geometry">
+              <div class="control-grid">
+                <label>Eye width <input id="geo_eye_w" type="range" min="40" max="320" step="1"><output></output></label>
+                <label>Eye height <input id="geo_eye_h" type="range" min="16" max="180" step="1"><output></output></label>
+                <label>Eye Y <input id="geo_eye_y" type="range" min="40" max="290" step="1"><output></output></label>
+                <label>Eye gap <input id="geo_eye_gap" type="range" min="0" max="260" step="1"><output></output></label>
+                <label>Mouth width <input id="geo_mouth_w" type="range" min="60" max="620" step="1"><output></output></label>
+                <label>Mouth Y <input id="geo_mouth_y" type="range" min="210" max="440" step="1"><output></output></label>
+              </div>
+            </div>
+            <div class="visual-panel hidden" data-panel="state">
+              <div class="control-grid">
+                <label>Label <input id="state_label" class="norm-input" maxlength="64"></label>
+                <label>Mood <input id="state_mood" class="norm-input" maxlength="64"></label>
+                <label>Mouth <select id="state_mouth" class="norm-input"><option>idle</option><option>flat</option><option>thinking</option><option>speaking</option><option>error</option><option>frown</option></select></label>
+                <label>Brow <select id="state_brow" class="norm-input"><option>flat</option><option>angry</option><option>worried</option><option>bored</option></select></label>
+                <label>Pupil X <input id="state_pupil_dx" type="range" min="-60" max="60" step="1"><output></output></label>
+                <label>Pupil Y <input id="state_pupil_dy" type="range" min="-60" max="60" step="1"><output></output></label>
+                <label>Blink <input id="state_blink" type="range" min="0" max="1" step="0.05"><output></output></label>
+                <label class="check-label"><input id="state_glitch" type="checkbox"> Glitch effect</label>
+              </div>
+            </div>
+            <div class="button-row">
+              <button id="saveVisualBtn" class="norm-btn">Save visual controls</button>
+              <button id="syncYamlBtn" class="norm-btn">Sync from YAML</button>
+            </div>
+          </div>
+          <div class="card designer-editor">
+            <div class="card-title">Advanced YAML Editor</div>
+            <p class="muted form-hint">Visual controls cover the usual knobs. YAML remains the forbidden basement for exact edits. Backup is made before save.</p>
+            <textarea id="yamlEditor" class="norm-textarea" spellcheck="false"></textarea>
+            <div class="button-row">
+              <button id="saveBtn" class="norm-btn">Save YAML</button>
+              <button id="reloadBtn" class="norm-btn">Reload selected pack</button>
+            </div>
+            <pre id="statusBox" class="status-log">Route: {route}\nAPI: {api}</pre>
           </div>
         </div>
       </div>

@@ -1,0 +1,68 @@
+config_version: 2
+
+audio:
+  enabled: true
+  data_dir: "./data/audio"
+  input_device: "default"
+  output_device: "default"
+  record_seconds_default: 5
+  max_record_seconds: 20
+  sample_rate: 44100
+  channels: 1
+  volume_percent: 85
+
+browser_playback:
+  enabled: true
+
+tts:
+  enabled: true
+  default_engine: "piper"
+  fallback_engine: "espeak"
+  test_phrase: "N.O.R.M. beta two audio subsystem online. The haunted speaker goblin appears functional."
+
+  piper:
+    enabled: true
+    # Piper TTS must come from this virtual environment. Do not blindly trust
+    # /usr/bin/piper; Raspberry Pi OS can provide an unrelated GTK app there.
+    executable: "./.venv/bin/piper"
+    allow_path_search: false
+    voice_id: "en_US-lessac-medium"
+    model_dir: "./data/models/piper"
+    length_scale: 1.0
+    noise_scale: 0.667
+    noise_w: 0.8
+    sentence_silence: 0.2
+    speaker_id: null
+    voices:
+      en_US-lessac-medium:
+        label: "Lessac — US English medium"
+        language: "en_US"
+        speaker: "lessac"
+        quality: "medium"
+        base_url: "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium"
+        model_file: "en_US-lessac-medium.onnx"
+        config_file: "en_US-lessac-medium.onnx.json"
+        model_card_file: "MODEL_CARD"
+        model_card_path: "./data/models/piper/en_US-lessac-medium.MODEL_CARD"
+      en_US-norman-medium:
+        label: "Norman — US English medium"
+        language: "en_US"
+        speaker: "norman"
+        quality: "medium"
+        base_url: "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/norman/medium"
+        model_file: "en_US-norman-medium.onnx"
+        config_file: "en_US-norman-medium.onnx.json"
+        model_card_file: "MODEL_CARD"
+        model_card_path: "./data/models/piper/en_US-norman-medium.MODEL_CARD"
+
+  espeak:
+    enabled: true
+    executable_preference:
+      - "espeak-ng"
+      - "espeak"
+    voice: "en-us"
+    speed: 150
+    pitch: 45
+    amplitude: 120
+    word_gap: 10
+    variant: ""
